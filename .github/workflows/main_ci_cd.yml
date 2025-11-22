@@ -56,18 +56,22 @@ jobs:
           host: ${{ env.VM_IP }} 
           username: ${{ env.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # Команды для запуска на удаленной VM:
+          
+          # НОВЫЙ СКРИПТ:
           script: |
-            # 1. Аутентификация Docker на VM в Artifact Registry
-            sudo gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }} --quiet --no-browser 
-
+            # 1. АВТОРИЗАЦИЯ DOCKER НА VM: 
+            # Мы используем сервисный аккаунт, который мы настроили на VM через Ansible.
+            # Удаляем флаг --no-browser, который вызывает ошибку на старой версии gcloud.
+            sudo gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }} --quiet
+            
             # 2. Остановка и удаление старого контейнера
-            sudo docker stop go-app-container || true
-            sudo docker rm go-app-container || true
-
+            # ВАЖНО: Мы удаляем команду sudo, т.к. пользователь 'ubuntu' добавлен в группу 'docker'!
+            docker stop go-app-container || true
+            docker rm go-app-container || true
+            
             # 3. Извлечение нового образа
             IMAGE_URL=${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest
-            sudo docker pull $IMAGE_URL
-
-            # 4. Запуск нового контейнера, маппинг порта 8080
-            sudo docker run -d --name go-app-container -p 8080:8080 --restart always $IMAGE_URL
+            docker pull $IMAGE_URL
+            
+            # 4. Запуск нового контейнера
+            docker run -d --name go-app-container -p 8080:8080 --restart always $IMAGE_URL
