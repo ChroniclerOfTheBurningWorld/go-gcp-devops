@@ -4,6 +4,7 @@ import (
     "fmt"
     "log"
     "net/http"
+    "github.com/go-chi/chi/v5" // <--- ЭТО ЗАВИСИМОСТЬ
 )
 
 // Обработчик HTTP-запросов
@@ -15,12 +16,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-    http.HandleFunc("/", handler)
-    port := "8080"
-    log.Printf("Сервер запущен и слушает на порту :%s", port)
-    
-    // Запускаем HTTP-сервер
-    if err := http.ListenAndServe(":"+port, nil); err != nil {
-        log.Fatalf("Ошибка при запуске сервера: %v", err)
-    }
+	r := chi.NewRouter()
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "Hello, World from Go and Chi!")
+	})
+	http.ListenAndServe(":8080", r)
 }
