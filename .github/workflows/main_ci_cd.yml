@@ -59,19 +59,17 @@ jobs:
           
           # НОВЫЙ СКРИПТ:
           script: |
-            # 1. АВТОРИЗАЦИЯ DOCKER НА VM: 
-            # Мы используем сервисный аккаунт, который мы настроили на VM через Ansible.
-            # Удаляем флаг --no-browser, который вызывает ошибку на старой версии gcloud.
+            # 1. АУТЕНТИФИКАЦИЯ DOCKER (ОСТАВЛЯЕМ SUDO)
             sudo gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }} --quiet
             
-            # 2. Остановка и удаление старого контейнера
-            # ВАЖНО: Мы удаляем команду sudo, т.к. пользователь 'ubuntu' добавлен в группу 'docker'!
+            # 2. Остановка и удаление старого контейнера (ОСТАВЛЯЕМ БЕЗ SUDO)
+            # Это не вызовет ошибку, просто уведомит, что контейнеров нет (No such container)
             docker stop go-app-container || true
             docker rm go-app-container || true
             
-            # 3. Извлечение нового образа
+            # 3. Извлечение нового образа (ВОЗВРАЩАЕМ SUDO, чтобы использовать учетные данные root)
             IMAGE_URL=${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest
-            docker pull $IMAGE_URL
+            sudo docker pull $IMAGE_URL
             
-            # 4. Запуск нового контейнера
-            docker run -d --name go-app-container -p 8080:8080 --restart always $IMAGE_URL
+            # 4. Запуск нового контейнера (ВОЗВРАЩАЕМ SUDO)
+            sudo docker run -d --name go-app-container -p 8080:8080 --restart always $IMAGE_URL
