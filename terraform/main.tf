@@ -24,6 +24,14 @@ provider "google" {
 resource "google_compute_instance" "app_server" {
   name         = "go-app-vm"
   machine_type = "e2-micro" # Дешевый тип машины, подходящий для теста
+  allow_stopping_for_update = true
+
+  service_account {
+    email  = "github-actions-deployer@devops-go-app.iam.gserviceaccount.com" # Вставьте email, полученный выше
+    scopes = [
+      "https://www.googleapis.com/auth/cloud-platform", # Полный доступ
+    ]
+  }
 
   # Образ диска (операционная система)
   boot_disk {

@@ -11,7 +11,7 @@ env:
   REPO_NAME: go-app-repo
   IMAGE_NAME: go-app
   GCP_ZONE: europe-west1-b
-  VM_IP: 35.195.239.19 # Обновленный публичный IP вашей VM
+  VM_IP: 34.22.143.69 # Обновленный публичный IP вашей VM
   SSH_USER: ubuntu
 
 jobs:
