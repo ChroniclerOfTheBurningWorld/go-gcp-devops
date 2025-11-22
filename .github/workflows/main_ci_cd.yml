@@ -3,7 +3,7 @@ name: Go App CI/CD to GCP
 on:
   push:
     branches:
-      - main # Запускать при пуше в ветку main
+      - main 
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -11,16 +11,13 @@ env:
   REPO_NAME: go-app-repo
   IMAGE_NAME: go-app
   GCP_ZONE: europe-west1-b
-  # Внимание: VM_NAME.GCP_ZONE.c.PROJECT_ID.internal - это внутреннее FQDN, 
-  # но для развертывания с помощью ssh-action часто требуется внешний IP. 
-  # Используем внешний IP, который мы обновили: 35.195.239.19
-  VM_IP: 35.195.239.19 
+  VM_IP: 35.195.239.19 # Обновленный публичный IP вашей VM
   SSH_USER: ubuntu
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       # 1. Checkout кода
       - name: Checkout Code
@@ -31,51 +28,47 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-          
+
       # 3. Настройка Docker для Artifact Registry
       - name: Set up Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }}
-        
+
       # 4. Сборка Docker образа
       - name: Build and Tag Docker Image
         run: |
-          # Создаем тэг 'latest'
           docker build -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest .
-          # Создаем тэг с временной меткой для истории
           docker tag ${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest ${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:$(date +%s)
 
       # 5. Публикация Docker образа в Artifact Registry
       - name: Push Docker Image to Artifact Registry
         run: docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }} --all-tags
 
-      # 6. Настройка SSH для развертывания (Используем ваш приватный ключ)
+      # 6. Настройка SSH для развертывания
       - name: Set up SSH Key for Deployment
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          
+
       # 7. Развертывание (запуск контейнера)
       - name: Deploy Container to VM
         uses: appleboy/ssh-action@v1.0.3
         with:
-          # Используем прямой внешний IP, который мы обновили
           host: ${{ env.VM_IP }} 
           username: ${{ env.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           # Команды для запуска на удаленной VM:
           script: |
             # 1. Аутентификация Docker на VM в Artifact Registry
-            # --quiet --no-browser, чтобы избежать интерактивных запросов
             sudo gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }} --quiet --no-browser 
-            
+
             # 2. Остановка и удаление старого контейнера
             sudo docker stop go-app-container || true
             sudo docker rm go-app-container || true
-            
+
             # 3. Извлечение нового образа
             IMAGE_URL=${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest
             sudo docker pull $IMAGE_URL
-            
+
             # 4. Запуск нового контейнера, маппинг порта 8080
-            # --restart always гарантирует, что контейнер запустится после перезагрузки VM
             sudo docker run -d --name go-app-container -p 8080:8080 --restart always $IMAGE_URL
+>>>>>>> 165d5af8576f3bf8d09aa8a4aa97d2868cdf94f4
