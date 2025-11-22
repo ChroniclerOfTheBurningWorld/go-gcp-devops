@@ -1,0 +1,65 @@
+---
+- name: Настройка целевого сервера Установка и настройка Docker
+  hosts: app_servers 
+  become: yes         
+  gather_facts: yes   
+
+  tasks:
+    # 1. Обновление APT-кэша (для свежести списка пакетов)
+    - name: Обновление APT-кэша (списков пакетов)
+      ansible.builtin.apt:
+        update_cache: yes
+
+    # 2. Установка необходимых базовых пакетов, включая lsb-release
+    - name: Установка необходимых базовых пакетов и утилит для Docker
+      ansible.builtin.apt:
+        name: 
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release # Оставляем здесь, чтобы убедиться, что он есть
+        state: present
+
+    # 3. Добавление официального GPG-ключа Docker
+    - name: Добавление официального GPG-ключа Docker
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
+
+    # 4. Добавление репозитория Docker
+    - name: Добавление репозитория Docker
+      ansible.builtin.apt_repository:
+        # Используем фильтр replace для исправления архитектуры с x86_64 на amd64
+        repo: "deb [arch={{ ansible_architecture | replace('x86_64', 'amd64') }}] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+        state: present
+        
+    # 5. Принудительное обновление кэша APT (Критически важно после добавления репозитория)
+    - name: Принудительное обновление кэша APT после добавления Docker репозитория
+      ansible.builtin.apt:
+        update_cache: yes
+        
+    # 6. Установка Docker (движка и CLI)
+    - name: Установка Docker (движка и CLI)
+      ansible.builtin.apt:
+        name: 
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        
+    # 7. Убедиться, что Docker запущен
+    - name: Убедиться, что Docker запущен и включен в автозагрузке
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+        
+    # 8. Добавление пользователя в группу docker
+    - name: Добавление пользователя в группу docker (чтобы не использовать sudo)
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
