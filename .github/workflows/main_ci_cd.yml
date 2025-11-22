@@ -71,4 +71,3 @@ jobs:
 
             # 4. Запуск нового контейнера, маппинг порта 8080
             sudo docker run -d --name go-app-container -p 8080:8080 --restart always $IMAGE_URL
->>>>>>> 165d5af8576f3bf8d09aa8a4aa97d2868cdf94f4
