@@ -11,7 +11,7 @@ env:
   REPO_NAME: go-app-repo
   IMAGE_NAME: go-app
   GCP_ZONE: europe-west1-b
-  VM_IP: 34.22.143.69 # Обновленный публичный IP вашей VM
+  VM_IP: 34.22.143.69
   SSH_USER: ubuntu
 
 jobs:
@@ -59,17 +59,17 @@ jobs:
           
           # НОВЫЙ СКРИПТ:
           script: |
-            # 1. АУТЕНТИФИКАЦИЯ DOCKER (ОСТАВЛЯЕМ SUDO)
+            # 1. АУТЕНТИФИКАЦИЯ DOCKER
             sudo gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }} --quiet
             
-            # 2. Остановка и удаление старого контейнера (ОСТАВЛЯЕМ БЕЗ SUDO)
-            # Это не вызовет ошибку, просто уведомит, что контейнеров нет (No such container)
+            # 2. Остановка и удаление старого контейнера
             docker stop go-app-container || true
             docker rm go-app-container || true
             
-            # 3. Извлечение нового образа (ВОЗВРАЩАЕМ SUDO, чтобы использовать учетные данные root)
+            # 3. Извлечение нового образа
             IMAGE_URL=${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest
             sudo docker pull $IMAGE_URL
             
-            # 4. Запуск нового контейнера (ВОЗВРАЩАЕМ SUDO)
+            # 4. Запуск нового контейнера
+
             sudo docker run -d --name go-app-container -p 8080:8080 --restart always $IMAGE_URL
