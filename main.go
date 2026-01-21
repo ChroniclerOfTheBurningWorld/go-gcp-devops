@@ -9,8 +9,7 @@ import (
 
 // Обработчик HTTP-запросов
 func handler(w http.ResponseWriter, r *http.Request) {
-    // В ответ добавим уникальный идентификатор для простоты отслеживания изменений
-    message := "Привет от Go-приложения (версия 1.0)! Я успешно развернут на GCP! 🚀"
+    message := "Привет от Go-приложения (версия 1.0)! Я успешно развернут на GCP!"
     fmt.Fprintf(w, message)
     log.Printf("Запрос обработан.")
 }
@@ -22,4 +21,5 @@ func main() {
 		fmt.Fprintf(w, "Hello, World from Go and Chi!")
 	})
 	http.ListenAndServe(":8080", r)
+
 }
