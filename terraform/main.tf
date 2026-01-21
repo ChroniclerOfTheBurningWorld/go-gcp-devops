@@ -10,11 +10,10 @@ terraform {
 
 # Блок Provider: Настраивает подключение к Google Cloud
 # Terraform будет автоматически использовать учетные данные из gcloud auth login, 
-# которые мы настроили ранее в Ubuntu.
+# которые были настроены ранее в Ubuntu.
 provider "google" {
-  # Замени [ТВОЙ_ИДЕНТИФИКАТОР_ПРОЕКТА_GCP] на реальный ID твоего проекта
   project = "devops-go-app"
-  region  = "europe-west1"  # Выбери регион, который тебе удобен
+  region  = "europe-west1"
   zone    = "europe-west1-b"
 }
 
@@ -23,11 +22,11 @@ provider "google" {
 # 1. Создание Виртуальной Машины (VM Instance)
 resource "google_compute_instance" "app_server" {
   name         = "go-app-vm"
-  machine_type = "e2-micro" # Дешевый тип машины, подходящий для теста
+  machine_type = "e2-micro"
   allow_stopping_for_update = true
 
   service_account {
-    email  = "github-actions-deployer@devops-go-app.iam.gserviceaccount.com" # Вставьте email, полученный выше
+    email  = "github-actions-deployer@devops-go-app.iam.gserviceaccount.com"
     scopes = [
       "https://www.googleapis.com/auth/cloud-platform", # Полный доступ
     ]
@@ -36,13 +35,12 @@ resource "google_compute_instance" "app_server" {
   # Образ диска (операционная система)
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-11" # Debian - популярный выбор для серверов
+      image = "debian-cloud/debian-11"
     }
   }
 
   # Сетевой интерфейс
   network_interface {
-    # Добавление сетевого тега "http-server" для брандмауэра
     network = "default"
     access_config {
       # Для получения публичного IP-адреса
@@ -50,7 +48,7 @@ resource "google_compute_instance" "app_server" {
   }
   
   # Добавляем SSH-ключ для возможности подключения
-  # Terraform автоматически загрузит твой публичный SSH-ключ из Ubuntu 
+  # Terraform автоматически загрузит публичный SSH-ключ из Ubuntu 
   # и добавит его в метаданные VM.
  metadata = {
     # Ключевое изменение: явно указываем имя пользователя (ubuntu) перед публичным ключом
@@ -62,7 +60,7 @@ resource "google_compute_instance" "app_server" {
 }
 
 # 2. Правило Брандмауэра (Firewall Rule)
-# Разрешаем входящий трафик на порт 8080 (где будет наше Go-приложение)
+# Разрешаем входящий трафик на порт 8080 (где будет Go-приложение)
 resource "google_compute_firewall" "http_8080" {
   name    = "allow-go-app-8080"
   network = "default"
@@ -80,7 +78,7 @@ resource "google_compute_firewall" "http_8080" {
 
 # --- Локальные переменные и Выводы (Outputs) ---
 
-# Локальная переменная: считываем содержимое твоего публичного SSH-ключа
+# Локальная переменная: считываем содержимое публичного SSH-ключа
 locals {
   # Считываем ключ из стандартного места (~/.ssh/id_rsa.pub)
   # trimspace удаляет лишние пробелы/переводы строки
@@ -91,4 +89,5 @@ locals {
 output "public_ip" {
   value = google_compute_instance.app_server.network_interface[0].access_config[0].nat_ip
   description = "Публичный IP-адрес VM Go-приложения"
+
 }
